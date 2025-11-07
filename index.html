@@ -10,24 +10,21 @@
       --blue-700:#0447a6;
       --muted:#6b7280;
       --card:#ffffff;
-      --bg:#f4f7fb;
     }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff 0%, #eef6ff 100%);color:#0f1724;min-height:100vh}
-    header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:linear-gradient(90deg,rgba(255,255,255,0.6),rgba(255,255,255,0.3));backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(3,7,18,0.06)}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff 0%,#eef6ff 100%);color:#0f1724;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:rgba(255,255,255,0.8);backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(3,7,18,0.06)}
     .brand{display:flex;align-items:center;gap:12px}
     .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--blue-600),var(--blue-700));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(11,100,214,0.25)}
     nav a{margin-left:18px;color:var(--muted);text-decoration:none;font-weight:600}
     nav a:hover{color:var(--blue-700)}
     .container{max-width:980px;margin:48px auto;padding:0 20px}
-    .hero{display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
     .panel{background:var(--card);border-radius:14px;padding:28px;box-shadow:0 20px 45px rgba(12,34,98,0.07);}
     .title{font-size:28px;color:var(--blue-700);margin-bottom:8px}
     .subtitle{color:var(--muted);margin-bottom:18px}
     .search-row{display:flex;gap:12px;align-items:center}
     input.zip{flex:1;padding:12px 14px;border-radius:9px;border:1px solid #e6eefb;font-size:16px;background:#fbfdff}
     button.search{background:linear-gradient(180deg,var(--blue-600),var(--blue-700));color:white;padding:12px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;box-shadow:0 10px 20px rgba(11,100,214,0.18)}
-    button.search:active{transform:translateY(1px)}
     .result-card{margin-top:18px;padding:16px;border-radius:10px;background:linear-gradient(180deg,#f7fbff,#f1f8ff);border:1px solid #e6f0ff}
     .utility-name{font-weight:700;color:#07356b;font-size:18px}
     .meta{color:var(--muted);font-size:14px;margin-top:6px}
@@ -37,7 +34,7 @@
       position:fixed;
       top:50%;
       left:50%;
-      transform:translate(-50%, -50%);
+      transform:translate(-50%,-50%);
       background:rgba(255,255,255,0.85);
       backdrop-filter:blur(12px);
       border-radius:16px;
@@ -50,14 +47,8 @@
       z-index:300;
       animation:fadeIn 0.5s ease forwards;
     }
-    @keyframes fadeIn {
-      from{opacity:0;transform:translate(-50%,-60%)}
-      to{opacity:1;transform:translate(-50%,-50%)}
-    }
-    @keyframes fadeOut {
-      from{opacity:1;transform:translate(-50%,-50%)}
-      to{opacity:0;transform:translate(-50%,-40%)}
-    }
+    @keyframes fadeIn {from{opacity:0;transform:translate(-50%,-60%)}to{opacity:1;transform:translate(-50%,-50%)}}
+    @keyframes fadeOut {from{opacity:1;}to{opacity:0;}}
   </style>
 </head>
 <body>
@@ -76,19 +67,17 @@
   </header>
 
   <main class="container">
-    <div class="hero">
-      <div class="panel">
-        <div class="title">Find your local utility provider</div>
-        <div class="subtitle">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider.</div>
-        <div class="search-row">
-          <input id="zip" class="zip" type="text" maxlength="30" placeholder="Enter ZIP code" />
-          <button class="search" id="btnSearch">Search</button>
-        </div>
-        <div id="status" class="meta" style="margin-top:10px;"></div>
-        <div id="result" class="result-card" style="display:none;">
-          <div class="utility-name" id="utilityName"></div>
-          <div class="meta" id="utilityMeta"></div>
-        </div>
+    <div class="panel">
+      <div class="title">Find your local utility provider</div>
+      <div class="subtitle">Enter any U.S. ZIP code. We’ll show the city, state, and your utility provider.</div>
+      <div class="search-row">
+        <input id="zip" class="zip" type="text" maxlength="30" placeholder="Enter ZIP code" />
+        <button class="search" id="btnSearch">Search</button>
+      </div>
+      <div id="status" class="meta" style="margin-top:10px;"></div>
+      <div id="result" class="result-card" style="display:none;">
+        <div class="utility-name" id="utilityName"></div>
+        <div class="meta" id="utilityMeta"></div>
       </div>
     </div>
   </main>
@@ -105,73 +94,78 @@
     const utilityNameEl = document.getElementById('utilityName');
     const utilityMetaEl = document.getElementById('utilityMeta');
 
-    // Utility + Gas database
+    // state + utility data
     const dataMap = {
-      OH: { electric:"⚡ Ohio Edison", gas:"🔥 Dominion Energy" },
-      PA: { electric:"⚡ PECO", gas:"🔥 Columbia Gas of Pennsylvania" },
-      NJ: { electric:"⚡ PSE&G", gas:"🔥 New Jersey Natural Gas" },
-      CA: { electric:"⚡ Pacific Gas & Electric", gas:"🔥 Southern California Gas" },
-      NY: { electric:"⚡ Con Edison", gas:"🔥 National Grid" },
-      DE: { electric:"⚡ Delmarva Power", gas:"🔥 Chesapeake Utilities" },
-      MI: { electric:"⚡ DTE Energy", gas:"🔥 Consumers Energy" },
-      RI: { electric:"⚡ Rhode Island Energy", gas:"🔥 Rhode Island Energy (Gas)" }
+      OH: {electric:"⚡ Ohio Edison", gas:"🔥 Dominion Energy"},
+      PA: {electric:"⚡ PECO", gas:"🔥 Columbia Gas of Pennsylvania"},
+      NJ: {electric:"⚡ PSE&G", gas:"🔥 New Jersey Natural Gas"},
+      CA: {electric:"⚡ Pacific Gas & Electric", gas:"🔥 Southern California Gas"},
+      NY: {electric:"⚡ Con Edison", gas:"🔥 National Grid"},
+      DE: {electric:"⚡ Delmarva Power", gas:"🔥 Chesapeake Utilities"},
+      MI: {electric:"⚡ DTE Energy", gas:"🔥 Consumers Energy"},
+      RI: {electric:"⚡ Rhode Island Energy", gas:"🔥 Rhode Island Energy (Gas)"}
     };
 
-    // Secret messages
+    // simple ZIP → city map
+    const cityMap = {
+      OH: {430:"Columbus", 441:"Cleveland", 452:"Cincinnati"},
+      PA: {152:"Pittsburgh", 191:"Philadelphia", 178:"Harrisburg"},
+      NJ: {070:"Newark", 080:"Camden", 086:"Trenton"},
+      CA: {900:"Los Angeles", 941:"San Francisco", 958:"Sacramento"},
+      NY: {100:"New York City", 142:"Buffalo", 132:"Syracuse"},
+      DE: {197:"Wilmington", 199:"Dover"},
+      MI: {480:"Detroit", 495:"Grand Rapids"},
+      RI: {028:"Providence"}
+    };
+
+    // Secret words popups
     const secretWords = {
-      kakey: "💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",
-      husband: "💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",
-      wife: "💍 My beautiful wife — you’re not just my partner, you’re my prayer and my paradise. 💫",
-      love: "💌 Love isn’t a word anymore — it’s your name written deep in my heart. ❤️‍🔥",
-      jaan: "💗 Jaan, you’re the light in my darkest nights — my reason, my calm, my forever. 🌙",
-      jaanu: "💞 Jaanu, if smiles had a face, it would be yours. You make every heartbeat meaningful. 💕",
-      baby: "🍼 My baby, you’re my sweetest addiction — softer than love, stronger than destiny. 💖",
-      "mera baby": "💫 Mera baby, you’re my tiny piece of heaven on Earth — always precious, always mine. 🥹❤️",
-      "mera bacha": "🧸 Mera bacha, tu meri sabse pyari feeling hai — mujhe sabse zyada sukoon tu deta hai. 😘",
-      chuchu: "🐥 Chuchu, you’re my little spark of joy — always chirping happiness into my world! 💛",
-      mithu: "🦜 Mithu, my lovely parrot — you fill my life with colors, love, and endless chirps of joy. 💚✨"
+      kakey:"💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",
+      husband:"💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",
+      wife:"💍 My beautiful wife — you’re not just my partner, you’re my prayer and my paradise. 💫",
+      love:"💌 Love isn’t a word anymore — it’s your name written deep in my heart. ❤️‍🔥",
+      jaan:"💗 Jaan, you’re the light in my darkest nights — my reason, my calm, my forever. 🌙",
+      jaanu:"💞 Jaanu, if smiles had a face, it would be yours. You make every heartbeat meaningful. 💕",
+      baby:"🍼 My baby, you’re my sweetest addiction — softer than love, stronger than destiny. 💖",
+      "mera baby":"💫 Mera baby, you’re my tiny piece of heaven on Earth — always precious, always mine. 🥹❤️",
+      "mera bacha":"🧸 Mera bacha, tu meri sabse pyari feeling hai — mujhe sabse zyada sukoon tu deta hai. 😘",
+      chuchu:"🐥 Chuchu, you’re my little spark of joy — always chirping happiness into my world! 💛",
+      mithu:"🦜 Mithu, my lovely parrot — you fill my life with colors, love, and endless chirps of joy. 💚✨"
     };
 
-    function showPopup(message) {
-      const popup = document.createElement('div');
-      popup.className = 'popup';
-      popup.textContent = message;
+    function showPopup(message){
+      const popup=document.createElement('div');
+      popup.className='popup';
+      popup.textContent=message;
       document.body.appendChild(popup);
-      setTimeout(() => {
-        popup.style.animation = 'fadeOut 0.5s ease forwards';
-        setTimeout(() => popup.remove(), 500);
-      }, 2500);
+      setTimeout(()=>{popup.style.animation='fadeOut 0.5s';setTimeout(()=>popup.remove(),500);},2500);
     }
 
-    btnSearch.addEventListener('click', () => {
-      const input = zipInput.value.trim().toLowerCase();
-      zipInput.value = "";
-      if (secretWords[input]) {
-        showPopup(secretWords[input]);
-        status.textContent = "";
-        resultCard.style.display = 'none';
-        return;
-      }
+    btnSearch.addEventListener('click',()=>{
+      const input=zipInput.value.trim().toLowerCase();
+      zipInput.value="";
+      if(secretWords[input]){showPopup(secretWords[input]);return;}
 
-      // state ZIP prefix logic
-      const zipPrefix = parseInt(input.substring(0,3));
-      let state = "";
-      if(zipPrefix>=430 && zipPrefix<=459) state="OH";
-      else if(zipPrefix>=150 && zipPrefix<=196) state="PA";
-      else if(zipPrefix>=700 && zipPrefix<=899) state="NJ";
-      else if(zipPrefix>=900 && zipPrefix<=961) state="CA";
-      else if(zipPrefix>=100 && zipPrefix<=149) state="NY";
-      else if(zipPrefix>=197 && zipPrefix<=199) state="DE";
-      else if(zipPrefix>=480 && zipPrefix<=499) state="MI";
-      else if(zipPrefix>=280 && zipPrefix<=299) state="RI";
+      if(!/^[0-9]{5}$/.test(input)){status.textContent="Enter a valid ZIP.";resultCard.style.display='none';return;}
+      const prefix=input.substring(0,3);
+      let state=null;
+      if(prefix>=430&&prefix<=459)state="OH";
+      else if(prefix>=150&&prefix<=196)state="PA";
+      else if(prefix>=700&&prefix<=899)state="NJ";
+      else if(prefix>=900&&prefix<=961)state="CA";
+      else if(prefix>=100&&prefix<=149)state="NY";
+      else if(prefix>=197&&prefix<=199)state="DE";
+      else if(prefix>=480&&prefix<=499)state="MI";
+      else if(prefix>=028&&prefix<=029)state="RI";
 
       if(!state){status.textContent="ZIP not recognized.";resultCard.style.display='none';return;}
 
-      const info = dataMap[state];
-      utilityNameEl.textContent = `${info.electric} • ${info.gas}`;
-      utilityMetaEl.textContent = `State: ${state}`;
-      resultCard.style.display = 'block';
-      status.textContent = "";
+      const info=dataMap[state];
+      const city=cityMap[state]&&cityMap[state][prefix]?cityMap[state][prefix]:"Unknown City";
+      utilityNameEl.textContent=`${info.electric} • ${info.gas}`;
+      utilityMetaEl.textContent=`City: ${city} • State: ${state}`;
+      resultCard.style.display='block';
+      status.textContent="";
     });
   </script>
 </body>
