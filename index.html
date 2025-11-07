@@ -4,145 +4,171 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Find Your Utility ⚡</title>
-  <link rel="preconnect" href="https://ucarecdn.com">
   <style>
-    :root{--blue-600:#0b64d6;--blue-700:#0447a6;--muted:#6b7280}
+    :root {
+      --blue-600:#0b64d6;
+      --blue-700:#0447a6;
+      --muted:#6b7280;
+      --card:#ffffff;
+      --bg:#f4f7fb;
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff,#eef6ff);color:#0f1724;min-height:100vh}
-    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:rgba(255,255,255,0.6);box-shadow:0 2px 8px rgba(3,7,18,0.06)}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff 0%, #eef6ff 100%);color:#0f1724;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 32px;background:linear-gradient(90deg,rgba(255,255,255,0.6),rgba(255,255,255,0.3));backdrop-filter:blur(6px);box-shadow:0 2px 8px rgba(3,7,18,0.06)}
     .brand{display:flex;align-items:center;gap:12px}
-    .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--blue-600),var(--blue-700));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px}
+    .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--blue-600),var(--blue-700));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(11,100,214,0.25)}
     nav a{margin-left:18px;color:var(--muted);text-decoration:none;font-weight:600}
-    .container{max-width:880px;margin:56px auto;padding:0 18px}
-    .card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 12px 30px rgba(12,34,98,0.06)}
-    .row{display:flex;gap:12px;align-items:center}
-    input{flex:1;padding:12px;border-radius:9px;border:1px solid #e6eefb;font-size:16px}
-    button{background:linear-gradient(180deg,var(--blue-600),var(--blue-700));color:#fff;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
-    .result{margin-top:14px;padding:14px;border-radius:8px;background:linear-gradient(180deg,#f7fbff,#f1f8ff);border:1px solid #e6f0ff}
-    .support-floating{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border-radius:50%;background:var(--blue-700);color:#fff;border:none;box-shadow:0 12px 30px rgba(11,100,214,0.2);cursor:pointer;font-size:22px}
-    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:200}
-    .modal .inner{width:100%;max-width:520px;background:#fff;padding:18px;border-radius:10px}
-    footer{text-align:center;color:var(--muted);margin:28px 0}
+    nav a:hover{color:var(--blue-700)}
+    .container{max-width:980px;margin:48px auto;padding:0 20px}
+    .hero{display:grid;grid-template-columns:1fr 420px;gap:28px;align-items:center}
+    .panel{background:var(--card);border-radius:14px;padding:28px;box-shadow:0 20px 45px rgba(12,34,98,0.07);}
+    .title{font-size:28px;color:var(--blue-700);margin-bottom:8px}
+    .subtitle{color:var(--muted);margin-bottom:18px}
+    .search-row{display:flex;gap:12px;align-items:center}
+    input.zip{flex:1;padding:12px 14px;border-radius:9px;border:1px solid #e6eefb;font-size:16px;background:#fbfdff}
+    button.search{background:linear-gradient(180deg,var(--blue-600),var(--blue-700));color:white;padding:12px 18px;border-radius:10px;border:none;font-weight:700;cursor:pointer;box-shadow:0 10px 20px rgba(11,100,214,0.18)}
+    button.search:active{transform:translateY(1px)}
+    .result-card{margin-top:18px;padding:16px;border-radius:10px;background:linear-gradient(180deg,#f7fbff,#f1f8ff);border:1px solid #e6f0ff}
+    .utility-name{font-weight:700;color:#07356b;font-size:18px}
+    .meta{color:var(--muted);font-size:14px;margin-top:6px}
+    footer{max-width:980px;margin:28px auto;color:var(--muted);font-size:13px;text-align:center}
+    /* Romantic popup */
+    .popup {
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%, -50%);
+      background:rgba(255,255,255,0.8);
+      backdrop-filter:blur(12px);
+      border-radius:16px;
+      padding:24px 28px;
+      text-align:center;
+      font-size:18px;
+      color:#ff4081;
+      font-weight:600;
+      box-shadow:0 10px 30px rgba(255,64,129,0.3);
+      z-index:300;
+      animation:fadeIn 0.5s ease forwards;
+    }
+    @keyframes fadeIn {
+      from{opacity:0;transform:translate(-50%,-60%)}
+      to{opacity:1;transform:translate(-50%,-50%)}
+    }
+    @keyframes fadeOut {
+      from{opacity:1;transform:translate(-50%,-50%)}
+      to{opacity:0;transform:translate(-50%,-40%)}
+    }
   </style>
 </head>
 <body>
   <header>
-    <div class="brand"><div class="logo">⚡</div><div><strong>Find Your Utility</strong><div style="font-size:12px;color:var(--muted)">Locate your utility provider</div></div></div>
-    <nav><a href="#">Home</a><a href="#" onclick="openAbout(event)">About</a></nav>
+    <div class="brand">
+      <div class="logo">⚡</div>
+      <div>
+        <div style="font-weight:700;color:var(--blue-700)">Find Your Utility</div>
+        <div style="font-size:13px;color:var(--muted)">Locate your electric & gas providers</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#">Home</a>
+      <a href="#">About</a>
+    </nav>
   </header>
 
   <main class="container">
-    <div class="card">
-      <h2>Find your local utility provider</h2>
-      <p style="color:var(--muted)">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider.</p>
-
-      <div class="row" style="margin-top:12px">
-        <input id="zip" placeholder="Enter ZIP (e.g. 44101)" maxlength="5" />
-        <button id="btn">Search</button>
-      </div>
-
-      <div id="status" style="margin-top:12px;color:var(--muted)"></div>
-      <div id="out" class="result" style="display:none">
-        <div id="outUtility" style="font-weight:800;font-size:18px"></div>
-        <div id="outMeta" style="margin-top:6px;color:var(--muted)"></div>
+    <div class="hero">
+      <div class="panel">
+        <div class="title">Find your local utility provider</div>
+        <div class="subtitle">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider.</div>
+        <div class="search-row">
+          <input id="zip" class="zip" type="text" maxlength="30" placeholder="Enter ZIP or Secret Word 💖" />
+          <button class="search" id="btnSearch">Search</button>
+        </div>
+        <div id="status" class="meta" style="margin-top:10px;"></div>
+        <div id="result" class="result-card" style="display:none;">
+          <div class="utility-name" id="utilityName"></div>
+          <div class="meta" id="utilityMeta"></div>
+        </div>
       </div>
     </div>
   </main>
 
-  <!-- Support Floating Button -->
-  <button class="support-floating" id="openSupport">💬</button>
-
-  <!-- Support Modal -->
-  <div id="modal" class="modal"><div class="inner">
-    <h3>Support</h3>
-    <form id="supportForm">
-      <label>Title</label>
-      <input id="stitle" required style="width:100%;padding:8px;margin-top:6px;border:1px solid #e6eefb;border-radius:8px" />
-
-      <label style="margin-top:8px">Message</label>
-      <textarea id="smsg" rows="4" required style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:8px"></textarea>
-
-      <!-- Uploadcare file upload -->
-      <input type="hidden" role="uploadcare-uploader" name="attachment"
-        data-public-key="93421cc4c0211b5c1d86"
-        data-max-size="31457280"
-      />
-
-      <div style="text-align:right;margin-top:10px">
-        <button type="button" id="close">Cancel</button>
-        <button type="submit" style="margin-left:8px">Send</button>
-      </div>
-    </form>
-  </div></div>
-
-  <footer>© <span id="year"></span> Find Your Utility</footer>
-
-  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js" defer></script>
+  <footer>© <span id="year"></span> Find Your Utility • Love + Energy ⚡</footer>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
-    const out = id('out'), outUtility = id('outUtility'), outMeta = id('outMeta'), status = id('status');
-    const modal = id('modal'), openSupport = id('openSupport'), closeBtn = id('close');
 
-    openSupport.onclick = () => modal.style.display = 'flex';
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; }
+    const zipInput = document.getElementById('zip');
+    const btnSearch = document.getElementById('btnSearch');
+    const status = document.getElementById('status');
+    const resultCard = document.getElementById('result');
+    const utilityNameEl = document.getElementById('utilityName');
+    const utilityMetaEl = document.getElementById('utilityMeta');
 
-    async function lookup(zip) {
-      status.textContent = 'Looking up...';
-      out.style.display = 'none';
-      try {
-        const res = await fetch('/api/lookup?zip=' + encodeURIComponent(zip));
-        const j = await res.json();
-        if (!j.ok) {
-          status.textContent = j.error || 'No utility found for this ZIP.';
-          return;
-        }
-        outUtility.textContent = 'Utility: ' + j.utility;
-        outMeta.textContent = `City: ${j.city || 'unknown'} • State: ${j.state || 'unknown'}`;
-        out.style.display = 'block';
-        status.textContent = '';
-      } catch (err) {
-        console.error(err);
-        status.textContent = 'Network error — try again later.';
-      }
-    }
-
-    document.getElementById('btn').onclick = () => {
-      const z = id('zip').value.trim();
-      if (!/^[0-9]{5}$/.test(z)) { status.textContent = 'Enter a valid 5-digit ZIP.'; return; }
-      lookup(z);
+    // romantic secret messages 💖
+    const secretWords = {
+      kakey: "💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",
+      husband: "💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",
+      wife: "💍 My beautiful wife — you’re not just my partner, you’re my prayer and my paradise. 💫",
+      love: "💌 Love isn’t a word anymore — it’s your name written deep in my heart. ❤️‍🔥",
+      jaan: "💗 Jaan, you’re the light in my darkest nights — my reason, my calm, my forever. 🌙",
+      jaanu: "💞 Jaanu, if smiles had a face, it would be yours. You make every heartbeat meaningful. 💕",
+      baby: "🍼 My baby, you’re my sweetest addiction — softer than love, stronger than destiny. 💖",
+      "mera baby": "💫 Mera baby, you’re my tiny piece of heaven on Earth — always precious, always mine. 🥹❤️",
+      "mera bacha": "🧸 Mera bacha, tu meri sabse pyari feeling hai — mujhe sabse zyada sukoon tu deta hai. 😘",
+      chuchu: "🐥 Chuchu, you’re my little spark of joy — always chirping happiness into my world! 💛",
+      mithu: "🦜 Mithu, my lovely parrot — you fill my life with colors, love, and endless chirps of joy. 💚✨"
     };
 
-    // Support Form Submit
-    const supportForm = document.getElementById('supportForm');
-    supportForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const title = document.getElementById('stitle').value.trim();
-      const message = document.getElementById('smsg').value.trim();
-      const attachmentInput = document.querySelector('input[name="attachment"]');
-      const fileValue = attachmentInput ? attachmentInput.value : '';
+    function showPopup(message) {
+      const popup = document.createElement('div');
+      popup.className = 'popup';
+      popup.textContent = message;
+      document.body.appendChild(popup);
+      setTimeout(() => {
+        popup.style.animation = 'fadeOut 0.5s ease forwards';
+        setTimeout(() => popup.remove(), 500);
+      }, 2500);
+    }
 
-      const payload = { title, message, attachment: fileValue };
+    btnSearch.addEventListener('click', async () => {
+      const zip = zipInput.value.trim().toLowerCase();
+      if (secretWords[zip]) {
+        showPopup(secretWords[zip]);
+        zipInput.value = "";
+        status.textContent = "";
+        resultCard.style.display = 'none';
+        return;
+      }
+
+      if (!/^\d{5}$/.test(zip)) {
+        status.textContent = 'Please enter a valid 5-digit ZIP.';
+        return;
+      }
+
+      status.textContent = 'Searching...';
+      resultCard.style.display = 'none';
 
       try {
-        await fetch('https://formspree.io/f/mgvnbbaw', {
+        const res = await fetch(`/api/lookup`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload)
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ zip })
         });
-      } catch (err) {
-        console.error('Form submit error', err);
-      } finally {
-        // reset + close modal
-        supportForm.reset();
-        uploadcare.Widget('[role=uploadcare-uploader]').value(null);
-        modal.style.display = 'none';
+        const data = await res.json();
+        if (!data.ok) {
+          status.textContent = 'No results found.';
+          return;
+        }
+        utilityNameEl.textContent = `Utility: ${data.utility}`;
+        utilityMetaEl.textContent = `City: ${data.city} • State: ${data.state}`;
+        resultCard.style.display = 'block';
+        status.textContent = '';
+      } catch(err) {
+        console.error(err);
+        status.textContent = 'Network error — please try again.';
       }
     });
-
-    function id(x){ return document.getElementById(x); }
-    function openAbout(e){ e.preventDefault(); alert('This tool helps users locate their electric or gas providers based on ZIP codes across supported states.'); }
   </script>
 </body>
 </html>
