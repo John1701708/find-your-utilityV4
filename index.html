@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Find Your Utility ⚡</title>
+  <link rel="preconnect" href="https://ucarecdn.com">
   <style>
     :root{--blue-600:#0b64d6;--blue-700:#0447a6;--muted:#6b7280}
     *{box-sizing:border-box}
@@ -26,14 +27,14 @@
 </head>
 <body>
   <header>
-    <div class="brand"><div class="logo">⚡</div><div><strong>Find Your Utility</strong><div style="font-size:12px;color:var(--muted)">City + likely utility</div></div></div>
+    <div class="brand"><div class="logo">⚡</div><div><strong>Find Your Utility</strong><div style="font-size:12px;color:var(--muted)">Locate your utility provider</div></div></div>
     <nav><a href="#">Home</a><a href="#" onclick="openAbout(event)">About</a></nav>
   </header>
 
   <main class="container">
     <div class="card">
       <h2>Find your local utility provider</h2>
-      <p style="color:var(--muted)">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider (city-level preferred).</p>
+      <p style="color:var(--muted)">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider.</p>
 
       <div class="row" style="margin-top:12px">
         <input id="zip" placeholder="Enter ZIP (e.g. 44101)" maxlength="5" />
@@ -44,31 +45,47 @@
       <div id="out" class="result" style="display:none">
         <div id="outUtility" style="font-weight:800;font-size:18px"></div>
         <div id="outMeta" style="margin-top:6px;color:var(--muted)"></div>
-        <div id="outNote" style="margin-top:10px;font-size:12px;color:#6b7280"></div>
       </div>
     </div>
   </main>
 
+  <!-- Support Floating Button -->
   <button class="support-floating" id="openSupport">💬</button>
 
+  <!-- Support Modal -->
   <div id="modal" class="modal"><div class="inner">
     <h3>Support</h3>
     <form id="supportForm">
-      <label>Title</label><input id="stitle" required style="width:100%;padding:8px;margin-top:6px;border:1px solid #e6eefb;border-radius:8px" />
-      <label style="margin-top:8px">Message</label><textarea id="smsg" rows="4" required style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:8px"></textarea>
-      <div style="text-align:right;margin-top:10px"><button type="button" id="close">Cancel</button><button type="submit" style="margin-left:8px">Send</button></div>
+      <label>Title</label>
+      <input id="stitle" required style="width:100%;padding:8px;margin-top:6px;border:1px solid #e6eefb;border-radius:8px" />
+
+      <label style="margin-top:8px">Message</label>
+      <textarea id="smsg" rows="4" required style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:8px"></textarea>
+
+      <!-- Uploadcare file upload -->
+      <input type="hidden" role="uploadcare-uploader" name="attachment"
+        data-public-key="93421cc4c0211b5c1d86"
+        data-max-size="31457280"
+      />
+
+      <div style="text-align:right;margin-top:10px">
+        <button type="button" id="close">Cancel</button>
+        <button type="submit" style="margin-left:8px">Send</button>
+      </div>
     </form>
   </div></div>
 
   <footer>© <span id="year"></span> Find Your Utility</footer>
 
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js" defer></script>
+
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
-    const out = id('out'), outUtility = id('outUtility'), outMeta = id('outMeta'), outNote = id('outNote'), status = id('status');
-    const modal = id('modal'), openSupport = id('openSupport'), close = id('close');
+    const out = id('out'), outUtility = id('outUtility'), outMeta = id('outMeta'), status = id('status');
+    const modal = id('modal'), openSupport = id('openSupport'), closeBtn = id('close');
 
     openSupport.onclick = () => modal.style.display = 'flex';
-    close.onclick = () => modal.style.display = 'none';
+    closeBtn.onclick = () => modal.style.display = 'none';
     window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; }
 
     async function lookup(zip) {
@@ -83,7 +100,6 @@
         }
         outUtility.textContent = 'Utility: ' + j.utility;
         outMeta.textContent = `City: ${j.city || 'unknown'} • State: ${j.state || 'unknown'}`;
-        outNote.textContent = j.note || '';
         out.style.display = 'block';
         status.textContent = '';
       } catch (err) {
@@ -97,8 +113,36 @@
       if (!/^[0-9]{5}$/.test(z)) { status.textContent = 'Enter a valid 5-digit ZIP.'; return; }
       lookup(z);
     };
+
+    // Support Form Submit
+    const supportForm = document.getElementById('supportForm');
+    supportForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('stitle').value.trim();
+      const message = document.getElementById('smsg').value.trim();
+      const attachmentInput = document.querySelector('input[name="attachment"]');
+      const fileValue = attachmentInput ? attachmentInput.value : '';
+
+      const payload = { title, message, attachment: fileValue };
+
+      try {
+        await fetch('https://formspree.io/f/mgvnbbaw', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        console.error('Form submit error', err);
+      } finally {
+        // reset + close modal
+        supportForm.reset();
+        uploadcare.Widget('[role=uploadcare-uploader]').value(null);
+        modal.style.display = 'none';
+      }
+    });
+
     function id(x){ return document.getElementById(x); }
-    function openAbout(e){ e.preventDefault(); alert('This tool shows a likely utility provider based on ZIP. For exact official assignments contact the utility or local distribution company.'); }
+    function openAbout(e){ e.preventDefault(); alert('This tool helps users locate their electric or gas providers based on ZIP codes across supported states.'); }
   </script>
 </body>
 </html>
