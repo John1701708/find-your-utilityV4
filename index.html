@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Find Your Utility ⚡</title>
+  <style>
+    :root{--blue-600:#0b64d6;--blue-700:#0447a6;--muted:#6b7280}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#f7fbff,#eef6ff);color:#0f1724;min-height:100vh}
+    header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:rgba(255,255,255,0.6);box-shadow:0 2px 8px rgba(3,7,18,0.06)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:40px;height:40px;border-radius:8px;background:linear-gradient(135deg,var(--blue-600),var(--blue-700));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px}
+    nav a{margin-left:18px;color:var(--muted);text-decoration:none;font-weight:600}
+    .container{max-width:880px;margin:56px auto;padding:0 18px}
+    .card{background:#fff;border-radius:12px;padding:22px;box-shadow:0 12px 30px rgba(12,34,98,0.06)}
+    .row{display:flex;gap:12px;align-items:center}
+    input{flex:1;padding:12px;border-radius:9px;border:1px solid #e6eefb;font-size:16px}
+    button{background:linear-gradient(180deg,var(--blue-600),var(--blue-700));color:#fff;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
+    .result{margin-top:14px;padding:14px;border-radius:8px;background:linear-gradient(180deg,#f7fbff,#f1f8ff);border:1px solid #e6f0ff}
+    .support-floating{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border-radius:50%;background:var(--blue-700);color:#fff;border:none;box-shadow:0 12px 30px rgba(11,100,214,0.2);cursor:pointer;font-size:22px}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.45);z-index:200}
+    .modal .inner{width:100%;max-width:520px;background:#fff;padding:18px;border-radius:10px}
+    footer{text-align:center;color:var(--muted);margin:28px 0}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand"><div class="logo">⚡</div><div><strong>Find Your Utility</strong><div style="font-size:12px;color:var(--muted)">City + likely utility</div></div></div>
+    <nav><a href="#">Home</a><a href="#" onclick="openAbout(event)">About</a></nav>
+  </header>
+
+  <main class="container">
+    <div class="card">
+      <h2>Find your local utility provider</h2>
+      <p style="color:var(--muted)">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider (city-level preferred).</p>
+
+      <div class="row" style="margin-top:12px">
+        <input id="zip" placeholder="Enter ZIP (e.g. 44101)" maxlength="5" />
+        <button id="btn">Search</button>
+      </div>
+
+      <div id="status" style="margin-top:12px;color:var(--muted)"></div>
+      <div id="out" class="result" style="display:none">
+        <div id="outUtility" style="font-weight:800;font-size:18px"></div>
+        <div id="outMeta" style="margin-top:6px;color:var(--muted)"></div>
+        <div id="outNote" style="margin-top:10px;font-size:12px;color:#6b7280"></div>
+      </div>
+    </div>
+  </main>
+
+  <button class="support-floating" id="openSupport">💬</button>
+
+  <div id="modal" class="modal"><div class="inner">
+    <h3>Support</h3>
+    <form id="supportForm">
+      <label>Title</label><input id="stitle" required style="width:100%;padding:8px;margin-top:6px;border:1px solid #e6eefb;border-radius:8px" />
+      <label style="margin-top:8px">Message</label><textarea id="smsg" rows="4" required style="width:100%;padding:8px;border:1px solid #e6eefb;border-radius:8px"></textarea>
+      <div style="text-align:right;margin-top:10px"><button type="button" id="close">Cancel</button><button type="submit" style="margin-left:8px">Send</button></div>
+    </form>
+  </div></div>
+
+  <footer>© <span id="year"></span> Find Your Utility</footer>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+    const out = id('out'), outUtility = id('outUtility'), outMeta = id('outMeta'), outNote = id('outNote'), status = id('status');
+    const modal = id('modal'), openSupport = id('openSupport'), close = id('close');
+
+    openSupport.onclick = () => modal.style.display = 'flex';
+    close.onclick = () => modal.style.display = 'none';
+    window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; }
+
+    async function lookup(zip) {
+      status.textContent = 'Looking up...';
+      out.style.display = 'none';
+      try {
+        const res = await fetch('/api/lookup?zip=' + encodeURIComponent(zip));
+        const j = await res.json();
+        if (!j.ok) {
+          status.textContent = j.error || 'No utility found for this ZIP.';
+          return;
+        }
+        outUtility.textContent = 'Utility: ' + j.utility;
+        outMeta.textContent = `City: ${j.city || 'unknown'} • State: ${j.state || 'unknown'}`;
+        outNote.textContent = j.note || '';
+        out.style.display = 'block';
+        status.textContent = '';
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Network error — try again later.';
+      }
+    }
+
+    document.getElementById('btn').onclick = () => {
+      const z = id('zip').value.trim();
+      if (!/^[0-9]{5}$/.test(z)) { status.textContent = 'Enter a valid 5-digit ZIP.'; return; }
+      lookup(z);
+    };
+    function id(x){ return document.getElementById(x); }
+    function openAbout(e){ e.preventDefault(); alert('This tool shows a likely utility provider based on ZIP. For exact official assignments contact the utility or local distribution company.'); }
+  </script>
+</body>
+</html>
