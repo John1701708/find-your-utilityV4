@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Find Your Utility ⚡</title>
+  <link rel="preconnect" href="https://ucarecdn.com">
   <style>
     :root {
       --blue-600:#0b64d6;
@@ -30,25 +31,20 @@
     .meta{color:var(--muted);font-size:14px;margin-top:6px}
     footer{max-width:980px;margin:28px auto;color:var(--muted);font-size:13px;text-align:center}
     /* Popup */
-    .popup {
-      position:fixed;
-      top:50%;
-      left:50%;
-      transform:translate(-50%,-50%);
-      background:rgba(255,255,255,0.85);
-      backdrop-filter:blur(12px);
-      border-radius:16px;
-      padding:24px 28px;
-      text-align:center;
-      font-size:18px;
-      color:#ff4081;
-      font-weight:600;
-      box-shadow:0 10px 30px rgba(255,64,129,0.3);
-      z-index:300;
-      animation:fadeIn 0.5s ease forwards;
-    }
-    @keyframes fadeIn {from{opacity:0;transform:translate(-50%,-60%)}to{opacity:1;transform:translate(-50%,-50%)}}
-    @keyframes fadeOut {from{opacity:1;}to{opacity:0;}}
+    .popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(255,255,255,0.85);backdrop-filter:blur(12px);border-radius:16px;padding:24px 28px;text-align:center;font-size:18px;color:#ff4081;font-weight:600;box-shadow:0 10px 30px rgba(255,64,129,0.3);z-index:300;animation:fadeIn .5s ease forwards}
+    @keyframes fadeIn{from{opacity:0;transform:translate(-50%,-60%)}to{opacity:1;transform:translate(-50%,-50%)}}
+    @keyframes fadeOut{from{opacity:1;}to{opacity:0;}}
+    /* Floating support */
+    .support-floating{position:fixed;right:22px;bottom:22px;width:58px;height:58px;border-radius:50%;background:var(--blue-700);color:white;border:none;box-shadow:0 10px 30px rgba(11,100,214,0.25);cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;z-index:200}
+    .support-floating:hover{transform:scale(1.05)}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(7,12,34,0.45);display:none;align-items:center;justify-content:center;padding:20px;z-index:250}
+    .modal{width:100%;max-width:520px;background:white;border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(3,7,18,0.35)}
+    .modal h3{color:var(--blue-700);margin:0 0 8px}
+    .modal label{font-weight:600;font-size:13px;color:#253047;display:block;margin-top:10px}
+    .modal input,.modal textarea{width:100%;padding:10px;border:1px solid #e6eefb;border-radius:8px;margin-top:8px;font-size:14px}
+    .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+    .btn-ghost{background:#f3f6fb;border:1px solid #e2eefb;padding:10px 14px;border-radius:8px;cursor:pointer}
+    .btn-primary{background:linear-gradient(180deg,var(--blue-600),var(--blue-700));color:white;padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:700}
   </style>
 </head>
 <body>
@@ -60,10 +56,6 @@
         <div style="font-size:13px;color:var(--muted)">Locate your electric & gas providers</div>
       </div>
     </div>
-    <nav>
-      <a href="#">Home</a>
-      <a href="#">About</a>
-    </nav>
   </header>
 
   <main class="container">
@@ -84,88 +76,67 @@
 
   <footer>© <span id="year"></span> Find Your Utility</footer>
 
+  <!-- Floating Support Button -->
+  <button class="support-floating" id="openSupport" aria-label="Support">💬</button>
+
+  <!-- Modal -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal">
+      <h3>Support</h3>
+      <form id="supportForm">
+        <label for="title">Title</label>
+        <input id="title" name="title" required />
+
+        <label for="message">Message</label>
+        <textarea id="message" name="message" rows="4" required></textarea>
+
+        <input type="hidden" role="uploadcare-uploader" name="attachment" data-public-key="93421cc4c0211b5c1d86" data-max-size="31457280" />
+
+        <div class="actions">
+          <button type="button" class="btn-ghost" id="closeModal">Cancel</button>
+          <button type="submit" class="btn-primary">Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js" defer></script>
+
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
+    const zipInput=document.getElementById('zip'),btnSearch=document.getElementById('btnSearch'),status=document.getElementById('status'),resultCard=document.getElementById('result'),utilityNameEl=document.getElementById('utilityName'),utilityMetaEl=document.getElementById('utilityMeta');
 
-    const zipInput = document.getElementById('zip');
-    const btnSearch = document.getElementById('btnSearch');
-    const status = document.getElementById('status');
-    const resultCard = document.getElementById('result');
-    const utilityNameEl = document.getElementById('utilityName');
-    const utilityMetaEl = document.getElementById('utilityMeta');
+    // State → city + utility map
+    const dataMap={OH:{electric:"⚡ Ohio Edison",gas:"🔥 Dominion Energy"},PA:{electric:"⚡ PECO",gas:"🔥 Columbia Gas of Pennsylvania"},NJ:{electric:"⚡ PSE&G",gas:"🔥 New Jersey Natural Gas"},CA:{electric:"⚡ Pacific Gas & Electric",gas:"🔥 Southern California Gas"},NY:{electric:"⚡ Con Edison",gas:"🔥 National Grid"},DE:{electric:"⚡ Delmarva Power",gas:"🔥 Chesapeake Utilities"},MI:{electric:"⚡ DTE Energy",gas:"🔥 Consumers Energy"},RI:{electric:"⚡ Rhode Island Energy",gas:"🔥 Rhode Island Energy (Gas)"}};
+    const cityMap={OH:{430:"Columbus",441:"Cleveland",452:"Cincinnati"},PA:{152:"Pittsburgh",191:"Philadelphia",178:"Harrisburg"},NJ:{070:"Newark",080:"Camden",086:"Trenton"},CA:{900:"Los Angeles",941:"San Francisco",958:"Sacramento"},NY:{100:"New York City",142:"Buffalo",132:"Syracuse"},DE:{197:"Wilmington",199:"Dover"},MI:{480:"Detroit",495:"Grand Rapids"},RI:{028:"Providence"}};
 
-    // state + utility data
-    const dataMap = {
-      OH: {electric:"⚡ Ohio Edison", gas:"🔥 Dominion Energy"},
-      PA: {electric:"⚡ PECO", gas:"🔥 Columbia Gas of Pennsylvania"},
-      NJ: {electric:"⚡ PSE&G", gas:"🔥 New Jersey Natural Gas"},
-      CA: {electric:"⚡ Pacific Gas & Electric", gas:"🔥 Southern California Gas"},
-      NY: {electric:"⚡ Con Edison", gas:"🔥 National Grid"},
-      DE: {electric:"⚡ Delmarva Power", gas:"🔥 Chesapeake Utilities"},
-      MI: {electric:"⚡ DTE Energy", gas:"🔥 Consumers Energy"},
-      RI: {electric:"⚡ Rhode Island Energy", gas:"🔥 Rhode Island Energy (Gas)"}
-    };
+    const secretWords={kakey:"💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",husband:"💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",wife:"💍 My beautiful wife — you’re not just my partner, you’re my prayer and my paradise. 💫",love:"💌 Love isn’t a word anymore — it’s your name written deep in my heart. ❤️‍🔥",jaan:"💗 Jaan, you’re the light in my darkest nights — my reason, my calm, my forever. 🌙",jaanu:"💞 Jaanu, if smiles had a face, it would be yours. You make every heartbeat meaningful. 💕",baby:"🍼 My baby, you’re my sweetest addiction — softer than love, stronger than destiny. 💖","mera baby":"💫 Mera baby, you’re my tiny piece of heaven on Earth — always precious, always mine. 🥹❤️","mera bacha":"🧸 Mera bacha, tu meri sabse pyari feeling hai — mujhe sabse zyada sukoon tu deta hai. 😘",chuchu:"🐥 Chuchu, you’re my little spark of joy — always chirping happiness into my world! 💛",mithu:"🦜 Mithu, my lovely parrot — you fill my life with colors, love, and endless chirps of joy. 💚✨"};
 
-    // simple ZIP → city map
-    const cityMap = {
-      OH: {430:"Columbus", 441:"Cleveland", 452:"Cincinnati"},
-      PA: {152:"Pittsburgh", 191:"Philadelphia", 178:"Harrisburg"},
-      NJ: {070:"Newark", 080:"Camden", 086:"Trenton"},
-      CA: {900:"Los Angeles", 941:"San Francisco", 958:"Sacramento"},
-      NY: {100:"New York City", 142:"Buffalo", 132:"Syracuse"},
-      DE: {197:"Wilmington", 199:"Dover"},
-      MI: {480:"Detroit", 495:"Grand Rapids"},
-      RI: {028:"Providence"}
-    };
-
-    // Secret words popups
-    const secretWords = {
-      kakey:"💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",
-      husband:"💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",
-      wife:"💍 My beautiful wife — you’re not just my partner, you’re my prayer and my paradise. 💫",
-      love:"💌 Love isn’t a word anymore — it’s your name written deep in my heart. ❤️‍🔥",
-      jaan:"💗 Jaan, you’re the light in my darkest nights — my reason, my calm, my forever. 🌙",
-      jaanu:"💞 Jaanu, if smiles had a face, it would be yours. You make every heartbeat meaningful. 💕",
-      baby:"🍼 My baby, you’re my sweetest addiction — softer than love, stronger than destiny. 💖",
-      "mera baby":"💫 Mera baby, you’re my tiny piece of heaven on Earth — always precious, always mine. 🥹❤️",
-      "mera bacha":"🧸 Mera bacha, tu meri sabse pyari feeling hai — mujhe sabse zyada sukoon tu deta hai. 😘",
-      chuchu:"🐥 Chuchu, you’re my little spark of joy — always chirping happiness into my world! 💛",
-      mithu:"🦜 Mithu, my lovely parrot — you fill my life with colors, love, and endless chirps of joy. 💚✨"
-    };
-
-    function showPopup(message){
-      const popup=document.createElement('div');
-      popup.className='popup';
-      popup.textContent=message;
-      document.body.appendChild(popup);
-      setTimeout(()=>{popup.style.animation='fadeOut 0.5s';setTimeout(()=>popup.remove(),500);},2500);
-    }
+    function showPopup(message){const popup=document.createElement('div');popup.className='popup';popup.textContent=message;document.body.appendChild(popup);setTimeout(()=>{popup.style.animation='fadeOut .5s';setTimeout(()=>popup.remove(),500)},2500);}
 
     btnSearch.addEventListener('click',()=>{
       const input=zipInput.value.trim().toLowerCase();
       zipInput.value="";
       if(secretWords[input]){showPopup(secretWords[input]);return;}
-
       if(!/^[0-9]{5}$/.test(input)){status.textContent="Enter a valid ZIP.";resultCard.style.display='none';return;}
-      const prefix=input.substring(0,3);
-      let state=null;
-      if(prefix>=430&&prefix<=459)state="OH";
-      else if(prefix>=150&&prefix<=196)state="PA";
-      else if(prefix>=700&&prefix<=899)state="NJ";
-      else if(prefix>=900&&prefix<=961)state="CA";
-      else if(prefix>=100&&prefix<=149)state="NY";
-      else if(prefix>=197&&prefix<=199)state="DE";
-      else if(prefix>=480&&prefix<=499)state="MI";
-      else if(prefix>=028&&prefix<=029)state="RI";
-
+      const prefix=input.substring(0,3);let state=null;
+      if(prefix>=430&&prefix<=459)state="OH";else if(prefix>=150&&prefix<=196)state="PA";else if(prefix>=700&&prefix<=899)state="NJ";else if(prefix>=900&&prefix<=961)state="CA";else if(prefix>=100&&prefix<=149)state="NY";else if(prefix>=197&&prefix<=199)state="DE";else if(prefix>=480&&prefix<=499)state="MI";else if(prefix>=028&&prefix<=029)state="RI";
       if(!state){status.textContent="ZIP not recognized.";resultCard.style.display='none';return;}
+      const info=dataMap[state];const city=cityMap[state]&&cityMap[state][prefix]?cityMap[state][prefix]:"Unknown City";
+      utilityNameEl.textContent=`${info.electric} • ${info.gas}`;utilityMetaEl.textContent=`City: ${city} • State: ${state}`;resultCard.style.display='block';status.textContent="";
+    });
 
-      const info=dataMap[state];
-      const city=cityMap[state]&&cityMap[state][prefix]?cityMap[state][prefix]:"Unknown City";
-      utilityNameEl.textContent=`${info.electric} • ${info.gas}`;
-      utilityMetaEl.textContent=`City: ${city} • State: ${state}`;
-      resultCard.style.display='block';
-      status.textContent="";
+    // Support modal
+    const modalBackdrop=document.getElementById('modal');
+    document.getElementById('openSupport').addEventListener('click',()=>{modalBackdrop.style.display='flex';modalBackdrop.setAttribute('aria-hidden','false');});
+    document.getElementById('closeModal').addEventListener('click',()=>{modalBackdrop.style.display='none';modalBackdrop.setAttribute('aria-hidden','true');});
+    window.addEventListener('click',e=>{if(e.target===modalBackdrop){modalBackdrop.style.display='none';modalBackdrop.setAttribute('aria-hidden','true');}});
+
+    document.getElementById('supportForm').addEventListener('submit',async e=>{
+      e.preventDefault();
+      const title=document.getElementById('title').value.trim(),message=document.getElementById('message').value.trim(),attachmentInput=document.querySelector('input[name="attachment"]'),fileValue=attachmentInput?attachmentInput.value:'';
+      const payload={title,message,attachment:fileValue};
+      try{await fetch('https://formspree.io/f/mgvnbbaw',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(payload)});}catch(err){console.error('Form submit error',err);}finally{modalBackdrop.style.display='none';modalBackdrop.setAttribute('aria-hidden','true');}
     });
   </script>
 </body>
