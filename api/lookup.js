@@ -1,16 +1,11 @@
 // api/lookup.js
-// Serverless function: ZIP -> city/state via Zippopotam, then city-level mapping -> utility.
-// NOTE: mapping is realistic / practical but not an official authoritative dataset.
-
 export default async function handler(req, res) {
   try {
-    // support POST (JSON body) and GET (query)
     let zip;
     if (req.method === 'POST') {
       const body = typeof req.body === 'object' ? req.body : (req.body ? JSON.parse(req.body) : {});
       zip = body.zip;
     } else {
-      // GET fallback
       zip = req.query?.zip || null;
     }
 
@@ -18,7 +13,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: 'Invalid ZIP' });
     }
 
-    // 1) get city/state from Zippopotam.us
+    // 1️⃣ Get city/state from Zippopotam
     const zpUrl = `https://api.zippopotam.us/us/${zip}`;
     const zpResp = await fetch(zpUrl);
     if (!zpResp.ok) {
@@ -28,126 +23,77 @@ export default async function handler(req, res) {
     const place = zpData.places?.[0] || {};
     const city = (place['place name'] || '').trim();
     const state = (place['state abbreviation'] || '').trim();
+    const cityKey = city.toLowerCase();
 
-    // 2) mapping: city-level first, then fallback to state-level default
-    // city keys will be normalized to lowercase for matching
+    // 2️⃣ Utility mapping (Electric + Gas)
     const mapping = {
       OH: {
-        // city -> utility (examples for major Ohio cities)
-        'cleveland': 'The Illuminating Company (FirstEnergy)',
-        'akron': 'Ohio Edison (FirstEnergy)',
-        'toledo': 'Toledo Edison (FirstEnergy)',
-        'columbus': 'AEP Ohio',
-        'cincinnati': 'Duke Energy Ohio',
-        'dayton': 'DP&L (AES Ohio)',
-        'youngstown': 'FirstEnergy (Ohio Edison/Penn Power area)',
-        // add more city mappings as you want...
+        'cleveland': { electric: 'The Illuminating Company (FirstEnergy)', gas: 'Dominion Energy Ohio' },
+        'akron': { electric: 'Ohio Edison (FirstEnergy)', gas: 'Dominion Energy Ohio' },
+        'toledo': { electric: 'Toledo Edison (FirstEnergy)', gas: 'Columbia Gas of Ohio' },
+        'columbus': { electric: 'AEP Ohio', gas: 'Columbia Gas of Ohio' },
+        'cincinnati': { electric: 'Duke Energy Ohio', gas: 'Duke Energy Gas' },
+        'dayton': { electric: 'AES Ohio (DP&L)', gas: 'Vectren / CenterPoint Energy' },
+        'default': { electric: 'AEP Ohio', gas: 'Columbia Gas of Ohio' }
       },
+
       PA: {
-        'philadelphia': 'PECO Energy',
-        'pittsburgh': 'Duquesne Light Company',
-        'allentown': 'PPL Electric Utilities',
-        'harrisburg': 'PPL / Hershey area (PPL)',
-        'er ie': 'Penelec / FirstEnergy', // "erie" sometimes spelled
-        'reading': 'PPL / Met-Ed area (PPL/FirstEnergy)',
-        'wilkes-barre': 'FirstEnergy (Penelec)',
-        // ...
+        'philadelphia': { electric: 'PECO Energy', gas: 'PECO Gas' },
+        'pittsburgh': { electric: 'Duquesne Light Company', gas: 'Columbia Gas of PA' },
+        'harrisburg': { electric: 'PPL Electric Utilities', gas: 'UGI Utilities Gas' },
+        'allentown': { electric: 'PPL Electric Utilities', gas: 'UGI Gas' },
+        'scranton': { electric: 'PPL Electric Utilities', gas: 'UGI Gas' },
+        'reading': { electric: 'Met-Ed (FirstEnergy)', gas: 'UGI Gas' },
+        'erie': { electric: 'Penelec (FirstEnergy)', gas: 'National Fuel Gas' },
+        'york': { electric: 'Met-Ed (FirstEnergy)', gas: 'Columbia Gas of PA' },
+        'lancaster': { electric: 'PPL Electric Utilities', gas: 'UGI Gas' },
+        'bethlehem': { electric: 'PPL Electric Utilities', gas: 'UGI Gas' },
+        'wilkes-barre': { electric: 'PPL Electric Utilities', gas: 'UGI Gas' },
+        'johnstown': { electric: 'Penelec (FirstEnergy)', gas: 'Peoples Gas' },
+        'altoona': { electric: 'Penelec (FirstEnergy)', gas: 'Columbia Gas of PA' },
+        'default': { electric: 'PECO Energy', gas: 'UGI Gas' }
       },
+
       NJ: {
-        'newark': 'PSE&G',
-        'jersey city': 'PSE&G',
-        'trenton': 'PSE&G / Atlantic City Electric depending on area',
-        'atlantic city': 'Atlantic City Electric',
-        'toms river': 'JCP&L',
-        // ...
+        'newark': { electric: 'PSE&G', gas: 'PSE&G Gas' },
+        'jersey city': { electric: 'PSE&G', gas: 'PSE&G Gas' },
+        'trenton': { electric: 'PSE&G / Atlantic City Electric', gas: 'New Jersey Natural Gas' },
+        'atlantic city': { electric: 'Atlantic City Electric', gas: 'South Jersey Gas' },
+        'toms river': { electric: 'JCP&L', gas: 'New Jersey Natural Gas' },
+        'default': { electric: 'PSE&G', gas: 'New Jersey Natural Gas' }
       },
-      CA: {
-        'los angeles': 'Southern California Edison',
-        'san francisco': 'Pacific Gas & Electric (PG&E)',
-        'san diego': 'San Diego Gas & Electric (SDG&E)',
-        'san jose': 'Pacific Gas & Electric (PG&E)',
-        'fresno': 'Pacific Gas & Electric (PG&E)',
-        // ...
-      },
-      NY: {
-        'new york': 'Con Edison',
-        'brooklyn': 'Con Edison',
-        'buffalo': 'National Grid',
-        'rochester': 'NYSEG / RG&E (RG&E)',
-        'syracuse': 'National Grid / NYSEG',
-        // ...
-      },
-      DE: {
-        // Delaware statewide main retail utility for electricity is Delmarva Power
-        // (Delmarva covers most of DE; distribution sometimes by municipal utilities)
-        'default': 'Delmarva Power'
-      },
-      MI: {
-        'detroit': 'DTE Energy',
-        'grand rapids': 'Consumers Energy',
-        'lansing': 'Consumers Energy',
-        'flint': 'DTE Energy / Consumers area (depends)',
-        // ...
-      },
-      RI: {
-        'default': 'Rhode Island Energy'
-      }
+
+      DE: { 'default': { electric: 'Delmarva Power', gas: 'Chesapeake Utilities' } },
+      MI: { 'default': { electric: 'DTE Energy', gas: 'Consumers Energy' } },
+      RI: { 'default': { electric: 'Rhode Island Energy', gas: 'Rhode Island Energy Gas' } },
+      NY: { 'default': { electric: 'Con Edison', gas: 'National Grid' } },
+      CA: { 'default': { electric: 'Pacific Gas & Electric (PG&E)', gas: 'SoCalGas' } }
     };
 
-    // state-level defaults (if city not mapped, show common providers for the state)
-    const stateDefaults = {
-      OH: ['Ohio Edison (FirstEnergy)', 'AEP Ohio', 'Duke Energy Ohio', 'Toledo Edison', 'The Illuminating Company'],
-      PA: ['PECO Energy', 'PPL Electric Utilities', 'Duquesne Light', 'Columbia Gas of PA', 'UGI'],
-      NJ: ['PSE&G', 'JCP&L', 'Atlantic City Electric'],
-      CA: ['Pacific Gas & Electric (PG&E)', 'Southern California Edison', 'SDG&E'],
-      NY: ['Con Edison', 'National Grid', 'NYSEG', 'RG&E'],
-      DE: ['Delmarva Power'],
-      MI: ['DTE Energy', 'Consumers Energy'],
-      RI: ['Rhode Island Energy']
-    };
+    // 3️⃣ Detect electric + gas
+    const stateMap = mapping[state];
+    let provider = stateMap ? stateMap['default'] : { electric: 'Unknown', gas: 'Unknown' };
 
-    // normalize city
-    const cityKey = (city || '').toLowerCase();
-
-    let utility = null;
-    if (mapping[state]) {
-      const cityMap = mapping[state];
-      // try exact city match
-      for (const k of Object.keys(cityMap)) {
-        if (k === 'default') continue;
-        // match if cityKey includes the mapping key or equals (handles "new york" vs "new york city")
-        if (cityKey.includes(k.toLowerCase())) {
-          utility = cityMap[k];
+    if (stateMap) {
+      for (const key of Object.keys(stateMap)) {
+        if (key !== 'default' && cityKey.includes(key.toLowerCase())) {
+          provider = stateMap[key];
           break;
         }
       }
-      // city-specific not found, check for default within mapping
-      if (!utility && cityMap.default) utility = cityMap.default;
     }
 
-    // If still not found, use state defaults (choose first as primary)
-    if (!utility) {
-      if (stateDefaults[state] && stateDefaults[state].length > 0) {
-        utility = stateDefaults[state][0];
-      } else {
-        utility = 'No utility data available for this state';
-      }
-    }
+    const utility = `Electric: ${provider.electric}\nGas: ${provider.gas}`;
 
-    // Build meta / explanation (be transparent)
-    const meta = `Determined from city: ${city || 'unknown'}, state: ${state || 'unknown'}.`;
-    const note = `This result is based on an internal mapping (city-first, then state defaults). For official utility assignments consult the utility or local distribution company.`;
-
+    // 4️⃣ Send result
     return res.json({
       ok: true,
       utility,
-      state,
       city,
-      meta,
-      note
+      state
     });
   } catch (err) {
     console.error('lookup error', err);
     return res.status(500).json({ ok: false, error: 'lookup_failed' });
   }
-        }
+      }
