@@ -32,13 +32,13 @@
     .utility-name{font-weight:700;color:#07356b;font-size:18px}
     .meta{color:var(--muted);font-size:14px;margin-top:6px}
     footer{max-width:980px;margin:28px auto;color:var(--muted);font-size:13px;text-align:center}
-    /* Romantic popup */
+    /* Popup */
     .popup {
       position:fixed;
       top:50%;
       left:50%;
       transform:translate(-50%, -50%);
-      background:rgba(255,255,255,0.8);
+      background:rgba(255,255,255,0.85);
       backdrop-filter:blur(12px);
       border-radius:16px;
       padding:24px 28px;
@@ -81,7 +81,7 @@
         <div class="title">Find your local utility provider</div>
         <div class="subtitle">Enter any U.S. ZIP code. We’ll show the city, state, and a likely utility provider.</div>
         <div class="search-row">
-          <input id="zip" class="zip" type="text" maxlength="30" placeholder="Enter ZIP or Secret Word 💖" />
+          <input id="zip" class="zip" type="text" maxlength="30" placeholder="Enter ZIP code" />
           <button class="search" id="btnSearch">Search</button>
         </div>
         <div id="status" class="meta" style="margin-top:10px;"></div>
@@ -93,7 +93,7 @@
     </div>
   </main>
 
-  <footer>© <span id="year"></span> Find Your Utility • Love + Energy ⚡</footer>
+  <footer>© <span id="year"></span> Find Your Utility</footer>
 
   <script>
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -105,7 +105,19 @@
     const utilityNameEl = document.getElementById('utilityName');
     const utilityMetaEl = document.getElementById('utilityMeta');
 
-    // romantic secret messages 💖
+    // Utility + Gas database
+    const dataMap = {
+      OH: { electric:"⚡ Ohio Edison", gas:"🔥 Dominion Energy" },
+      PA: { electric:"⚡ PECO", gas:"🔥 Columbia Gas of Pennsylvania" },
+      NJ: { electric:"⚡ PSE&G", gas:"🔥 New Jersey Natural Gas" },
+      CA: { electric:"⚡ Pacific Gas & Electric", gas:"🔥 Southern California Gas" },
+      NY: { electric:"⚡ Con Edison", gas:"🔥 National Grid" },
+      DE: { electric:"⚡ Delmarva Power", gas:"🔥 Chesapeake Utilities" },
+      MI: { electric:"⚡ DTE Energy", gas:"🔥 Consumers Energy" },
+      RI: { electric:"⚡ Rhode Island Energy", gas:"🔥 Rhode Island Energy (Gas)" }
+    };
+
+    // Secret messages
     const secretWords = {
       kakey: "💖 Hey Kakey, you’re my forever sunshine — no power outage can ever dim your glow in my life. ☀️",
       husband: "💕 Your husband’s heart beats only for you. You’re my reason, my peace, my everything. ❤️",
@@ -131,43 +143,35 @@
       }, 2500);
     }
 
-    btnSearch.addEventListener('click', async () => {
-      const zip = zipInput.value.trim().toLowerCase();
-      if (secretWords[zip]) {
-        showPopup(secretWords[zip]);
-        zipInput.value = "";
+    btnSearch.addEventListener('click', () => {
+      const input = zipInput.value.trim().toLowerCase();
+      zipInput.value = "";
+      if (secretWords[input]) {
+        showPopup(secretWords[input]);
         status.textContent = "";
         resultCard.style.display = 'none';
         return;
       }
 
-      if (!/^\d{5}$/.test(zip)) {
-        status.textContent = 'Please enter a valid 5-digit ZIP.';
-        return;
-      }
+      // state ZIP prefix logic
+      const zipPrefix = parseInt(input.substring(0,3));
+      let state = "";
+      if(zipPrefix>=430 && zipPrefix<=459) state="OH";
+      else if(zipPrefix>=150 && zipPrefix<=196) state="PA";
+      else if(zipPrefix>=700 && zipPrefix<=899) state="NJ";
+      else if(zipPrefix>=900 && zipPrefix<=961) state="CA";
+      else if(zipPrefix>=100 && zipPrefix<=149) state="NY";
+      else if(zipPrefix>=197 && zipPrefix<=199) state="DE";
+      else if(zipPrefix>=480 && zipPrefix<=499) state="MI";
+      else if(zipPrefix>=280 && zipPrefix<=299) state="RI";
 
-      status.textContent = 'Searching...';
-      resultCard.style.display = 'none';
+      if(!state){status.textContent="ZIP not recognized.";resultCard.style.display='none';return;}
 
-      try {
-        const res = await fetch(`/api/lookup`, {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({ zip })
-        });
-        const data = await res.json();
-        if (!data.ok) {
-          status.textContent = 'No results found.';
-          return;
-        }
-        utilityNameEl.textContent = `Utility: ${data.utility}`;
-        utilityMetaEl.textContent = `City: ${data.city} • State: ${data.state}`;
-        resultCard.style.display = 'block';
-        status.textContent = '';
-      } catch(err) {
-        console.error(err);
-        status.textContent = 'Network error — please try again.';
-      }
+      const info = dataMap[state];
+      utilityNameEl.textContent = `${info.electric} • ${info.gas}`;
+      utilityMetaEl.textContent = `State: ${state}`;
+      resultCard.style.display = 'block';
+      status.textContent = "";
     });
   </script>
 </body>
